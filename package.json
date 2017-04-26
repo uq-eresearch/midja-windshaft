@@ -1,0 +1,27 @@
+{
+  "name": "midja-windshaft",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/uq-eresearch/midja-windshaft.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/uq-eresearch/midja-windshaft/issues"
+  },
+  "homepage": "https://github.com/uq-eresearch/midja-windshaft#readme",
+  "engines": {
+    "node": ">= 6.5.0"
+  },
+  "dependencies": {
+    "fs-promise": "^2.0.2",
+    "windshaft": "^3.1.1"
+  }
+}
