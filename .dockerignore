@@ -1,5 +1,6 @@
 .git
-node_modules
 .gitignore
+Dockerfile
+node_modules
 *.docker
 *.aci

@@ -21,7 +21,13 @@
     "node": ">= 6.5.0"
   },
   "dependencies": {
+    "body-parser": "^1.17.1",
+    "express": "^4.15.2",
     "fs-promise": "^2.0.2",
-    "windshaft": "^3.1.1"
+    "gdal": "^0.9.4",
+    "mapnik": "^3.6.0",
+    "morgan": "^1.8.1",
+    "windshaft": "^3.1.1",
+    "zipfile": "^0.5.11"
   }
 }

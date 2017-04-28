@@ -1,85 +1,91 @@
 const debug = require('debug')('windshaft:server')
 const express = require('express')
+const bodyParser = require('body-parser')
+const morgan = require('morgan')
 const RedisPool = require('redis-mpool')
 const _ = require('underscore')
 const mapnik = require('mapnik')
 const windshaft = require('windshaft')
 
 const MapConfig = windshaft.model.MapConfig
-const DummyMapConfigProvider = require('../node_modules/windshaft/models/providers/dummy_mapconfig_provider')
+const DummyMapConfigProvider = require('../node_modules/windshaft/lib/windshaft/models/providers/dummy_mapconfig_provider')
 const MapStoreMapConfigProvider = windshaft.model.provider.MapStoreMapConfig
 
 module.exports = function(opts) {
   const grainstore = {
     "datasource": opts.postgres,
-    "mapnik_version": mapnik.versions.mapnik
+    "mapnik_version": "3.0.12" //mapnik.versions.mapnik
   }
   bootstrapFonts(grainstore)
 
   // Create Express app
-  const app = express.createServer()
-  app.use(express.bodyParser())
-  app.use(express.logger())
+  const app = express()
+  // - with JSON body parsing
+  app.use(bodyParser.json())
+  // - with logging
+  app.use(morgan('tiny'))
 
   // Init WindShaft components
   const mapStore = new windshaft.storage.MapStore({
-    pool: makeRedisPool(opts.redis)
+    pool: makeRedisPool(opts.redis),
+    expire_time: 3600 // Cache map definition for an hour
   })
   const rendererFactory = new windshaft.renderer.Factory({
     mapnik: {
       grainstore: grainstore
     }
   })
-  const rendererCacheOpts = {
-    ttl: 60000, // 60 seconds TTL by default
-    statsInterval: 60000 // reports stats every milliseconds defined here
-  })
-  const rendererCache = new windshaft.cache.RendererCache(rendererFactory, rendererCacheOpts)
+  const rendererCache = new windshaft.cache.RendererCache(rendererFactory)
   const tileBackend = new windshaft.backend.Tile(rendererCache)
   const attributesBackend = new windshaft.backend.Attributes()
   const mapValidatorBackend = new windshaft.backend.MapValidator(tileBackend, attributesBackend)
   const mapBackend = new windshaft.backend.Map(rendererCache, mapStore, mapValidatorBackend)
 
   // Handlers
+  function getParams(req) {
+    return _.extend(req.params, { "dbname": opts.postgres.database })
+  }
+
   function cors(req, res, next) {
     doCORS(res, "Content-Type")
     return next()
   }
 
   function create(req, res) {
+    const params = getParams(req)
     const requestMapConfig = req.body
     doCORS(res)
 
     var mapConfig = MapConfig.create(requestMapConfig)
     mapBackend.createLayergroup(
       mapConfig,
-      req.params,
-      new DummyMapConfigProvider(mapConfig, req.params),
+      params,
+      new DummyMapConfigProvider(mapConfig, params),
       function(err, response) {
         if (err) {
           const errMsg = (err.message || err) + ''
-          res.send(errMsg, 500)
-          console.error("create: " + JSON.stringify(err))
+          res.status(500).send(errMsg)
+          logError("create", err);
         } else {
-          res.send(response, 200);
+          res.status(200).send(response)
         }
       });
   }
 
   function tileOrLayer(req, res) {
-    const params = _.extend(req.params, { "dbname": opts.postgres.database })
+    const params = getParams(req)
     doCORS(res)
 
     tileBackend.getTile(
-      new MapStoreMapConfigProvider(map_store, params),
+      new MapStoreMapConfigProvider(mapStore, params),
       params,
       function (err, tile, headers) {
         if (err) {
           var errMsg = (err.message || err) + '';
-          res.send(errMsg, 500)
-          console.error("tilesOrLayer: " + JSON.stringify(err));
+          res.status(500).send(errMsg)
+          logError("tileOrLayer", err);
         } else {
-          res.send(tile, headers, 200);
+          res.send(tile, headers, 200)
         }
       })
   }
@@ -94,6 +100,10 @@ module.exports = function(opts) {
   return app;
 }
 
+function logError(tag, err) {
+  console.error(tag+": "+JSON.stringify(err)+(err.stack||""));
+}
+
 function makeRedisPool(redisOpts) {
   redisOpts = redisOpts || {};
   return new RedisPool(_.extend(redisOpts, {name: 'windshaft:server'}));
@@ -102,7 +112,7 @@ function makeRedisPool(redisOpts) {
 function bootstrapFonts(grainstore) {
   // Set carto renderer configuration for MMLStore
   grainstore.carto_env = {};
-  var cenv = opts.grainstore.carto_env;
+  var cenv = grainstore.carto_env;
   cenv.validation_data = {};
   mapnik.register_system_fonts();
   mapnik.register_default_fonts();
