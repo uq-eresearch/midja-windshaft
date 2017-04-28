@@ -18,14 +18,14 @@
   },
   "homepage": "https://github.com/uq-eresearch/midja-windshaft#readme",
   "engines": {
-    "node": ">= 6.5.0"
+    "node": ">= 7.8.0"
   },
   "dependencies": {
     "body-parser": "^1.17.1",
     "express": "^4.15.2",
     "fs-promise": "^2.0.2",
     "gdal": "^0.9.4",
-    "mapnik": "^3.6.0",
+    "mapnik": "=3.5.14",
     "morgan": "^1.8.1",
     "windshaft": "^3.1.1",
     "zipfile": "^0.5.11"

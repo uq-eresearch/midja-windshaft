@@ -1,15 +1,14 @@
-FROM alpine:edge
+FROM ubuntu:16.10
 
-RUN echo "@testing http://nl.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories && \
-  apk update && \
-  apk add -u \
-    bash git make g++ nodejs-current-npm \
-    giflib-dev libjpeg-turbo-dev libpng-dev libwebp-dev \
-    boost-dev cairo-dev pango-dev \
-    mapnik@testing mapnik-dev@testing && \
-  rm -rf /var/cache/apk/*
-RUN ln -s /usr/include/mapnik/mapnik/mapbox /usr/include/mapbox
-RUN find /usr/include/mapnik/mapnik/agg -type f -exec ln -s {} /usr/include/ \;
+RUN apt-get update && \
+  apt-get install -y curl && \
+  curl -sL https://deb.nodesource.com/setup_7.x | bash - && \
+  apt-get update && \
+  apt-get install -y \
+    nodejs git make g++ \
+    libgif-dev libjpeg-dev libpng-dev libwebp-dev \
+    libboost-all-dev libcairo2-dev libpango1.0-dev libmapnik-dev && \
+  apt-get clean
 
 COPY . /app
 WORKDIR /app
@@ -17,6 +16,6 @@ RUN npm install
 
 VOLUME /conf
 USER daemon
-ENTRYPOINT node ./index.js /conf/db.json 3000
+ENTRYPOINT node ./index.js /conf/config.json 3000
 
 EXPOSE 3000
