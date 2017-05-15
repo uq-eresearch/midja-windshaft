@@ -21,7 +21,7 @@ module.exports = function(opts) {
   // Create Express app
   const app = express()
   // - with JSON body parsing
-  app.use(bodyParser.json())
+  app.use(bodyParser.json({ limit: '16mb' }));
   // - with logging
   app.use(morgan('tiny'))
 
